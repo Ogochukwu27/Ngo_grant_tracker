@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Model 1: User
+// Represents NGO staff members who can log in to manage records.
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("STAFF") // Roles can be "ADMIN" or "STAFF"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Model 2: Beneficiary
+// Represents the people receiving assistance from the NGO.
+model Beneficiary {
+  id          String             @id @default(uuid())
+  fullName    String
+  phoneNumber String
+  email       String?            // Optional field
+  location    String
+  category    String             // e.g., "Medical assistance", "Educational support", etc.
+  description String             // Detailed description of their needs
+  status      String             @default("ACTIVE") // Statuses: "ACTIVE", "INACTIVE", "RESOLVED"
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  
+  // Relations
+  assistance  AssistanceRecord[] // A beneficiary can receive multiple assistances (One-to-Many)
+  evidence    Evidence[]         // A beneficiary can have multiple uploaded documents/images
+  followUps   FollowUp[]         // A beneficiary can have multiple follow-up records
+}
+
+// Model 3: AssistanceRecord
+// Tracks specific support events (e.g., money given, supplies provided).
+model AssistanceRecord {
+  id            String      @id @default(uuid())
+  amount        Float       // Financial value of the assistance
+  purpose       String      // Detailed explanation of the assistance purpose
+  dateGiven     DateTime    @default(now())
+  category      String      // Category of assistance (e.g. medical, education)
+  notes         String?     // Optional field for extra detail
+  
+  // Relation to Beneficiary (Many-to-One)
+  beneficiaryId String
+  beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// Model 4: Evidence
+// Stores file uploads (images, PDFs, documents) uploaded by staff as proof of assistance.
+model Evidence {
+  id            String      @id @default(uuid())
+  fileName      String      // Name of the uploaded file
+  fileUrl       String      // URL path of the stored file (e.g. Cloudinary url)
+  fileType      String      // File extension/mime type (e.g., "pdf", "image/png")
+  cloudinaryId  String?     // Public ID of the file on Cloudinary for easy deletion
+  
+  // Relation to Beneficiary (Many-to-One)
+  beneficiaryId String
+  beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime    @default(now())
+}
+
+// Model 5: FollowUp
+// Logs monitoring tasks and outcomes for beneficiaries after receiving assistance.
+model FollowUp {
+  id            String      @id @default(uuid())
+  scheduledDate DateTime    // Date when the follow-up should take place
+  notes         String?     // Notes detailing the status of the beneficiary
+  status        String      @default("PENDING") // Statuses: "PENDING", "COMPLETED", "OVERDUE"
+  
+  // Relation to Beneficiary (Many-to-One)
+  beneficiaryId String
+  beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// Model 6: Notification
+// Stores system reminders, e.g., when a follow-up is due.
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Base Layer Styling */
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    @apply bg-[#fffdf0] text-slate-800 dark:bg-[#040d04] dark:text-slate-100 antialiased min-h-screen relative overflow-x-hidden transition-colors duration-300;
+  }
+}
+
+/* Premium Styling Helpers */
+.glass-card {
+  @apply bg-white/80 dark:bg-[#091709]/80 backdrop-blur-md border border-amber-100/60 dark:border-emerald-950/80 rounded-2xl shadow-xl shadow-amber-900/5 dark:shadow-none transition-all duration-300;
+}
+
+.hover-glow:hover {
+  @apply border-amber-200/50 dark:border-emerald-900/50 shadow-2xl shadow-amber-500/5 dark:shadow-emerald-500/10 -translate-y-0.5;
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-[#d34300] to-[#104210] dark:from-[#feab32] dark:to-[#60a071] bg-clip-text text-transparent;
+}
+
+.gradient-header {
+  @apply bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent;
+}
+
+/* Custom premium scrollbar style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-[#fffdf0]/50 dark:bg-[#040d04]/50 rounded-full;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-amber-200 dark:bg-emerald-800 rounded-full hover:bg-amber-400 dark:hover:bg-emerald-600 transition-colors;
+}
+
+/* Input styles focus ring glow */
+.input-primary {
+  @apply w-full rounded-xl border border-amber-200/60 dark:border-emerald-900 bg-white/70 dark:bg-[#091709]/70 px-4 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 shadow-sm transition-all focus:border-amber-500 focus:bg-white dark:focus:bg-[#040d04] focus:outline-none focus:ring-4 focus:ring-amber-500/10 dark:focus:ring-amber-500/20;
+}
+
+/* Base button animations */
+.btn-animate {
+  @apply transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer;
+}
+
+/* ==========================================================================
+   Global Dark Mode Override System
+   Remaps light-mode hardcoded styles to premium dark equivalents
+   ========================================================================== */
+.dark .text-slate-900 { color: #f8fafc !important; }
+.dark .text-slate-800 { color: #f1f5f9 !important; }
+.dark .text-slate-700 { color: #e2e8f0 !important; }
+.dark .text-slate-650 { color: #cbd5e1 !important; }
+.dark .text-slate-600 { color: #cbd5e1 !important; }
+.dark .text-slate-550 { color: #94a3b8 !important; }
+.dark .text-slate-500 { color: #94a3b8 !important; }
+.dark .text-slate-400 { color: #64748b !important; }
+
+/* Background Overrides */
+.dark .bg-white { background-color: #091709 !important; }
+.dark .bg-slate-50 { background-color: #040d04 !important; }
+.dark .bg-slate-100 { background-color: #0d270d !important; }
+.dark .bg-slate-200 { background-color: #104210 !important; }
+
+/* Interactive Hover States */
+.dark .hover\:bg-slate-50\/50:hover { background-color: rgba(13, 39, 13, 0.4) !important; }
+.dark .hover\:bg-slate-50:hover { background-color: rgba(13, 39, 13, 0.6) !important; }
+.dark .hover\:text-slate-800:hover { color: #f8fafc !important; }
+
+/* Border / Divider Overrides */
+.dark .border-slate-100 { border-color: #0d270d !important; }
+.dark .border-slate-200 { border-color: #104210 !important; }
+.dark .border-slate-200\/50 { border-color: rgba(16, 66, 16, 0.5) !important; }
+.dark .border-slate-200\/60 { border-color: rgba(16, 66, 16, 0.6) !important; }
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #0d270d !important; }
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #104210 !important; }
+
+/* Form Field Focus Overrides */
+.dark .focus\:bg-white:focus { background-color: #040d04 !important; }
+.dark input::placeholder, .dark textarea::placeholder { color: #507550 !important; }
