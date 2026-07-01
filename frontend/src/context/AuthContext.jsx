@@ -7,7 +7,7 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token') || null);
+  const [token, setToken] = useState(sessionStorage.getItem('token') || null);
   const [loading, setLoading] = useState(true);
   const [currency, setCurrencyState] = useState(localStorage.getItem('currency') || 'NGN');
   const [toast, setToast] = useState(null);
@@ -88,6 +88,41 @@ export const AuthProvider = ({ children }) => {
     loadUserProfile();
   }, [token]);
 
+  // Inactivity auto-logout (10 minutes)
+  useEffect(() => {
+    if (!token) return;
+
+    let timeoutId;
+    const INACTIVITY_LIMIT = 10 * 60 * 1000; // 10 minutes in ms
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        logout();
+        triggerToast('You have been logged out due to inactivity.', 'error');
+      }, INACTIVITY_LIMIT);
+    };
+
+    // Events to track user activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    // Add event listeners to detect active usage
+    events.forEach((event) => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    // Initialize the timer
+    resetTimer();
+
+    // Cleanup
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach((event) => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [token]);
+
   /**
    * Log in user
    * @param {string} email
@@ -106,7 +141,7 @@ export const AuthProvider = ({ children }) => {
       const data = await res.json();
 
       if (res.status === 200) {
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('token', data.token);
         setToken(data.token);
         setUser({
           id: data.id,
@@ -128,7 +163,7 @@ export const AuthProvider = ({ children }) => {
    * Log out user
    */
   const logout = () => {
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     setToken(null);
     setUser(null);
   };
@@ -152,7 +187,7 @@ export const AuthProvider = ({ children }) => {
       const data = await res.json();
 
       if (res.status === 201) {
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('token', data.token);
         setToken(data.token);
         setUser({
           id: data.id,

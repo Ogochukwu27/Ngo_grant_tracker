@@ -2,7 +2,7 @@
 
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { ShieldCheck, KeyRound, AlertCircle, CheckCircle } from 'lucide-react';
+import { ShieldCheck, KeyRound, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 const Settings = () => {
   const { authFetch, triggerToast } = useContext(AuthContext);
@@ -11,6 +11,11 @@ const Settings = () => {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Password visibility states
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Status feedback states
   const [submitting, setSubmitting] = useState(false);
@@ -58,6 +63,9 @@ const Settings = () => {
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
+        setShowOldPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
       } else {
         setError(data.message || 'Failed to update password.');
         triggerToast(data.message || 'Failed to update password.', 'error');
@@ -124,14 +132,27 @@ const Settings = () => {
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Current Password <span className="text-red-500">*</span>
               </label>
-              <input
-                type="password"
-                required
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                placeholder="••••••••"
-                className="input-primary mt-2"
-              />
+              <div className="relative mt-2">
+                <input
+                  type={showOldPassword ? 'text' : 'password'}
+                  required
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-primary pr-12 w-full"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowOldPassword(!showOldPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  {showOldPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* New Password Input */}
@@ -139,14 +160,27 @@ const Settings = () => {
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 New Password <span className="text-red-500">*</span>
               </label>
-              <input
-                type="password"
-                required
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-                className="input-primary mt-2"
-              />
+              <div className="relative mt-2">
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-primary pr-12 w-full"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Confirm Password Input */}
@@ -154,14 +188,27 @@ const Settings = () => {
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Confirm New Password <span className="text-red-500">*</span>
               </label>
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className="input-primary mt-2"
-              />
+              <div className="relative mt-2">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-primary pr-12 w-full"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Submit Action button */}
