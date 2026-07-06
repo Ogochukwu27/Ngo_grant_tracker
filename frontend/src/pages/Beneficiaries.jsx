@@ -29,6 +29,7 @@ const Beneficiaries = () => {
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState('');
   const [registering, setRegistering] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Fetch beneficiaries based on current query states
   const fetchBeneficiaries = async () => {
@@ -63,24 +64,25 @@ const Beneficiaries = () => {
     setFormError('');
     setRegistering(true);
 
-    if (!fullName || !phoneNumber || !location || !formCategory || !description) {
-      setFormError('Please fill in all required fields');
+    if (!fullName || !phoneNumber || !location || !formCategory || !description || !selectedFile) {
+      setFormError('Please fill in all required fields and upload a supporting document');
       setRegistering(false);
       return;
     }
 
     try {
+      const formData = new FormData();
+      formData.append('fullName', fullName);
+      formData.append('phoneNumber', phoneNumber);
+      if (email) formData.append('email', email);
+      formData.append('location', location);
+      formData.append('category', formCategory);
+      formData.append('description', description);
+      formData.append('file', selectedFile);
+
       const res = await authFetch('/beneficiaries', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName,
-          phoneNumber,
-          email: email || null,
-          location,
-          category: formCategory,
-          description,
-        }),
+        body: formData,
       });
 
       if (res.status === 201) {
@@ -92,6 +94,7 @@ const Beneficiaries = () => {
         setEmail('');
         setLocation('');
         setDescription('');
+        setSelectedFile(null);
       } else {
         const errData = await res.json();
         setFormError(errData.message || 'Failed to create record');
@@ -255,6 +258,7 @@ const Beneficiaries = () => {
               onClick={() => {
                 setShowModal(false);
                 setFormError('');
+                setSelectedFile(null);
               }}
               className="absolute top-6 right-6 text-slate-400 hover:text-slate-600"
             >
@@ -364,12 +368,27 @@ const Beneficiaries = () => {
                 ></textarea>
               </div>
 
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+                  Case Evidence / Proof of Need <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="file"
+                  required
+                  accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.txt"
+                  onChange={(e) => setSelectedFile(e.target.files[0])}
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
+                />
+                <p className="mt-1 text-[10px] text-slate-400">Accepted formats: PNG, JPG, JPEG, PDF, Word, TXT (Max 5MB)</p>
+              </div>
+
               <div className="flex gap-4 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     setFormError('');
+                    setSelectedFile(null);
                   }}
                   className="w-1/2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                 >

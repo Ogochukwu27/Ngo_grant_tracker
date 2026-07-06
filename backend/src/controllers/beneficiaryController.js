@@ -1,4 +1,20 @@
-// backend/src/controllers/beneficiaryController.js
+const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
+
+// Check if Cloudinary environment variables are configured in the .env file
+const isCloudinaryConfigured =
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET;
+
+if (isCloudinaryConfigured) {
+  // Initialize Cloudinary SDK configuration
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+}
 
 const prisma = require('../config/db');
 
@@ -12,11 +28,17 @@ const createBeneficiary = async (req, res) => {
 
   // 1. Basic validation - ensure all required fields are provided
   if (!fullName || !phoneNumber || !location || !category || !description) {
+    if (req.file) fs.unlinkSync(req.file.path);
     return res.status(400).json({ message: 'Please provide all required fields (fullName, phoneNumber, location, category, description)' });
   }
 
+  // 2. File upload validation (Mandatory)
+  if (!req.file) {
+    return res.status(400).json({ message: 'No case evidence document uploaded. Please upload a supporting document to register a beneficiary.' });
+  }
+
   try {
-    // 2. Create the beneficiary in PostgreSQL
+    // 3. Create the beneficiary in PostgreSQL
     const beneficiary = await prisma.beneficiary.create({
       data: {
         fullName,
@@ -29,9 +51,43 @@ const createBeneficiary = async (req, res) => {
       },
     });
 
+    const localTempPath = req.file.path;
+    let fileUrl = `/uploads/${req.file.filename}`;
+    let cloudinaryId = null;
+
+    // 4. Handle Cloudinary Upload
+    if (isCloudinaryConfigured) {
+      try {
+        console.log('☁️ Uploading case evidence to Cloudinary...');
+        const result = await cloudinary.uploader.upload(localTempPath, {
+          folder: 'ngo_grant_tracker',
+          resource_type: 'auto',
+        });
+        fileUrl = result.secure_url;
+        cloudinaryId = result.public_id;
+        fs.unlinkSync(localTempPath);
+      } catch (cloudErr) {
+        console.warn('⚠️ Cloudinary upload failed. Falling back to local disk:', cloudErr.message);
+      }
+    }
+
+    // 5. Store evidence in the database
+    await prisma.evidence.create({
+      data: {
+        fileName: req.file.originalname,
+        fileUrl: fileUrl,
+        fileType: req.file.mimetype,
+        cloudinaryId: cloudinaryId,
+        beneficiaryId: beneficiary.id,
+      },
+    });
+
     res.status(201).json(beneficiary);
   } catch (error) {
     console.error('Error creating beneficiary:', error);
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
     res.status(500).json({ message: 'Server error while creating beneficiary record' });
   }
 };

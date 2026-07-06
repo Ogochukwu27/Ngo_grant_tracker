@@ -222,7 +222,7 @@ const Dashboard = () => {
             </div>
             
             <p className="text-[11px] text-slate-400 mt-2">
-              Chronological ledger trends. Hover over coordinate nodes to display specific totals.
+              Chronological support logs trends. Hover over coordinate nodes to display specific totals.
             </p>
           </div>
 

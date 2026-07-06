@@ -15,13 +15,15 @@ const {
 // Import authentication middleware to protect all routes
 const { protect } = require('../middleware/authMiddleware');
 
+const upload = require('../config/upload');
+
 // Using router.route() lets us group endpoints that share the same URL path.
 // This is a clean, production-ready organization pattern.
 
 // Endpoints for "/api/beneficiaries"
 router
   .route('/')
-  .post(protect, createBeneficiary) // Create a new beneficiary (needs token)
+  .post(protect, upload.single('file'), createBeneficiary) // Create a new beneficiary (needs token)
   .get(protect, getBeneficiaries);  // List all beneficiaries with filter/search (needs token)
 
 // Endpoints for "/api/beneficiaries/:id"
