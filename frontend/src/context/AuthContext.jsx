@@ -52,7 +52,8 @@ export const AuthProvider = ({ children }) => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num);
   };
 
-  const API_URL = 'http://localhost:5000/api';
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const API_URL = `${BACKEND_URL}/api`;
 
   // Verify token and load profile on mount
   useEffect(() => {
