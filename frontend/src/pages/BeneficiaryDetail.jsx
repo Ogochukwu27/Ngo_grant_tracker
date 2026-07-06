@@ -1008,7 +1008,7 @@ const BeneficiaryDetail = () => {
                             <span className="text-[10px] text-slate-400 font-medium">
                               {new Date(item.dateGiven).toLocaleDateString()}
                             </span>
-                            <div className="flex items-center gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <div className="flex items-center gap-2 mt-1">
                               <button
                                 onClick={() => {
                                   setEditingAssistanceId(item.id);
@@ -1020,14 +1020,15 @@ const BeneficiaryDetail = () => {
                                   setAssistanceReceipt(null);
                                   setShowAssistanceForm(true);
                                 }}
-                                className="text-slate-400 hover:text-primary-500 transition-all text-xs font-bold bg-transparent border-0 cursor-pointer p-1"
+                                className="text-primary-600 hover:text-primary-500 transition-all text-xs font-bold bg-transparent border-0 cursor-pointer py-1 pr-1"
                                 title="Edit support log"
                               >
                                 Edit
                               </button>
+                              <span className="text-slate-300">|</span>
                               <button
                                 onClick={() => handleDeleteAssistance(item.id)}
-                                className="text-slate-400 hover:text-red-500 transition-all text-xs font-bold bg-transparent border-0 cursor-pointer p-1"
+                                className="text-red-600 hover:text-red-500 transition-all text-xs font-bold bg-transparent border-0 cursor-pointer py-1 pl-1"
                                 title="Delete support log"
                               >
                                 Delete
