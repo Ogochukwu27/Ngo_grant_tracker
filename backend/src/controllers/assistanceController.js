@@ -123,8 +123,39 @@ const updateAssistance = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Delete an assistance log entry
+ * @route   DELETE /api/assistance/:id
+ * @access  Private
+ */
+const deleteAssistance = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1. Confirm that this record exists in our database
+    const existingRecord = await prisma.assistanceRecord.findUnique({
+      where: { id },
+    });
+
+    if (!existingRecord) {
+      return res.status(404).json({ message: 'Assistance record not found' });
+    }
+
+    // 2. Perform deletion
+    await prisma.assistanceRecord.delete({
+      where: { id },
+    });
+
+    res.json({ message: 'Assistance record deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting assistance record:', error);
+    res.status(500).json({ message: 'Server error while deleting assistance log' });
+  }
+};
+
 module.exports = {
   createAssistance,
   getAssistanceRecords,
   updateAssistance,
+  deleteAssistance,
 };

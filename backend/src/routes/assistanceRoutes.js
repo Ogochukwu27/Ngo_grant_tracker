@@ -8,6 +8,7 @@ const {
   createAssistance,
   getAssistanceRecords,
   updateAssistance,
+  deleteAssistance,
 } = require('../controllers/assistanceController');
 
 // Import authentication middleware
@@ -22,6 +23,7 @@ router
 // Route mapping for /api/assistance/:id
 router
   .route('/:id')
-  .put(protect, updateAssistance); // Update specific entry (needs token)
+  .put(protect, updateAssistance) // Update specific entry (needs token)
+  .delete(protect, deleteAssistance); // Delete specific entry (needs token)
 
 module.exports = router;

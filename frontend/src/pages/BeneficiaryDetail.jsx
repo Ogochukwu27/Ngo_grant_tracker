@@ -52,6 +52,7 @@ const BeneficiaryDetail = () => {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState('');
   const [savingDescription, setSavingDescription] = useState(false);
+  const [editingAssistanceId, setEditingAssistanceId] = useState(null);
 
   // Follow-Up states
   const [showFollowUpForm, setShowFollowUpForm] = useState(false);
@@ -157,7 +158,20 @@ const BeneficiaryDetail = () => {
     }
   };
 
-  // Submit Assistance Record Log Form
+  // Helper to reset the assistance logging / editing form states
+  const resetAssistanceForm = () => {
+    setShowAssistanceForm(false);
+    setEditingAssistanceId(null);
+    setAmount('');
+    setPurpose('');
+    setAssistanceNotes('');
+    setAssistanceReceipt(null);
+    setAssistanceError('');
+    const fileInput = document.getElementById('assistance-receipt-input');
+    if (fileInput) fileInput.value = '';
+  };
+
+  // Submit Assistance Record Log Form (Supports both POST creation and PUT updating)
   const handleLogAssistance = async (e) => {
     e.preventDefault();
     setAssistanceError('');
@@ -169,7 +183,8 @@ const BeneficiaryDetail = () => {
       return;
     }
 
-    if (!assistanceReceipt) {
+    // Receipt is mandatory for new log creation, but optional when editing
+    if (!assistanceReceipt && !editingAssistanceId) {
       setAssistanceError('Please upload a receipt as mandatory proof of assistance.');
       setLoggingAssistance(false);
       return;
@@ -179,34 +194,49 @@ const BeneficiaryDetail = () => {
     const finalAmount = currency === 'USD' ? inputAmount * 1500 : inputAmount;
 
     try {
-      // 1. Upload receipt first
-      const formData = new FormData();
-      formData.append('file', assistanceReceipt);
-      formData.append('beneficiaryId', id);
+      let combinedNotes = assistanceNotes;
 
-      const uploadRes = await authFetch('/evidence', {
-        method: 'POST',
-        body: formData,
-      });
+      // 1. Upload new receipt if one is selected
+      if (assistanceReceipt) {
+        const formData = new FormData();
+        formData.append('file', assistanceReceipt);
+        formData.append('beneficiaryId', id);
 
-      if (uploadRes.status !== 201) {
-        const uploadErrData = await uploadRes.json();
-        setAssistanceError(uploadErrData.message || 'Failed to upload receipt evidence.');
-        setLoggingAssistance(false);
-        return;
+        const uploadRes = await authFetch('/evidence', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (uploadRes.status !== 201) {
+          const uploadErrData = await uploadRes.json();
+          setAssistanceError(uploadErrData.message || 'Failed to upload receipt evidence.');
+          setLoggingAssistance(false);
+          return;
+        }
+
+        const uploadData = await uploadRes.json();
+        const receiptMeta = `[Receipt: ${uploadData.fileName}](${uploadData.fileUrl})`;
+        combinedNotes = assistanceNotes 
+          ? `${assistanceNotes}\n${receiptMeta}` 
+          : receiptMeta;
+      } else if (editingAssistanceId) {
+        // Preserving the old receipt link if editing and no new receipt is chosen
+        const oldRecord = beneficiary.assistance.find(item => item.id === editingAssistanceId);
+        const receiptMatch = oldRecord.notes?.match(/\[Receipt:\s*([^\]]+)\]\(([^)]+)\)/);
+        if (receiptMatch) {
+          const receiptMeta = `[Receipt: ${receiptMatch[1]}](${receiptMatch[2]})`;
+          combinedNotes = assistanceNotes 
+            ? `${assistanceNotes}\n${receiptMeta}` 
+            : receiptMeta;
+        }
       }
 
-      const uploadData = await uploadRes.json();
+      // 2. Determine POST or PUT endpoint and method
+      const endpoint = editingAssistanceId ? `/assistance/${editingAssistanceId}` : '/assistance';
+      const method = editingAssistanceId ? 'PUT' : 'POST';
 
-      // 2. Append receipt details as notes metadata
-      const receiptMeta = `[Receipt: ${uploadData.fileName}](${uploadData.fileUrl})`;
-      const combinedNotes = assistanceNotes 
-        ? `${assistanceNotes}\n${receiptMeta}` 
-        : receiptMeta;
-
-      // 3. Log assistance record with receipt reference
-      const res = await authFetch('/assistance', {
-        method: 'POST',
+      const res = await authFetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           beneficiaryId: id,
@@ -217,26 +247,40 @@ const BeneficiaryDetail = () => {
         }),
       });
 
-      if (res.status === 201) {
-        // Success! Reload profile details, reset states
+      if (res.status === 201 || res.status === 200) {
         fetchDetails();
-        setShowAssistanceForm(false);
-        setAmount('');
-        setPurpose('');
-        setAssistanceNotes('');
-        setAssistanceReceipt(null);
-        // Reset file input in UI
-        const fileInput = document.getElementById('assistance-receipt-input');
-        if (fileInput) fileInput.value = '';
+        resetAssistanceForm();
+        triggerToast(editingAssistanceId ? 'Support log updated successfully.' : 'Support log recorded successfully.', 'success');
       } else {
         const errData = await res.json();
-        setAssistanceError(errData.message || 'Failed to log assistance');
+        setAssistanceError(errData.message || 'Failed to submit support log');
       }
     } catch (err) {
       console.error('Error logging support:', err.message);
       setAssistanceError('Server error.');
     } finally {
       setLoggingAssistance(false);
+    }
+  };
+
+  // Delete specific assistance log record
+  const handleDeleteAssistance = async (assistanceId) => {
+    if (!window.confirm("Are you sure you want to permanently delete this support log?")) {
+      return;
+    }
+    try {
+      const res = await authFetch(`/assistance/${assistanceId}`, {
+        method: 'DELETE',
+      });
+      if (res.status === 200) {
+        triggerToast('Support log deleted successfully.', 'success');
+        fetchDetails();
+      } else {
+        triggerToast('Failed to delete support log.', 'error');
+      }
+    } catch (err) {
+      console.error('Error deleting assistance:', err.message);
+      triggerToast('Server error while deleting support log.', 'error');
     }
   };
 
@@ -797,12 +841,11 @@ const BeneficiaryDetail = () => {
                 {showAssistanceForm && (
                   <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-6 space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
-                      <h5 className="text-sm font-bold text-slate-700">Record Assistance Entry</h5>
+                      <h5 className="text-sm font-bold text-slate-700">
+                        {editingAssistanceId ? 'Edit Assistance Entry' : 'Record Assistance Entry'}
+                      </h5>
                       <button
-                        onClick={() => {
-                          setShowAssistanceForm(false);
-                          setAssistanceError('');
-                        }}
+                        onClick={resetAssistanceForm}
                         className="text-slate-400 hover:text-slate-600"
                       >
                         <X className="h-4 w-4" />
@@ -883,24 +926,26 @@ const BeneficiaryDetail = () => {
 
                       <div>
                         <label className="text-xs font-bold text-slate-500 dark:text-slate-450 uppercase tracking-wider block">
-                          Upload Receipt / Proof of Payment <span className="text-red-500">*</span>
+                          Upload Receipt / Proof of Payment {editingAssistanceId ? '' : <span className="text-red-500">*</span>}
                         </label>
                         <input
                           id="assistance-receipt-input"
                           type="file"
-                          required
+                          required={!editingAssistanceId}
                           onChange={(e) => setAssistanceReceipt(e.target.files[0])}
                           className="mt-2 text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer w-full"
                         />
+                        {editingAssistanceId && (
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            Leave empty to preserve current receipt, or upload a new file to replace it.
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex justify-end gap-3 pt-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setShowAssistanceForm(false);
-                            setAssistanceError('');
-                          }}
+                          onClick={resetAssistanceForm}
                           className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100"
                         >
                           Cancel
@@ -933,8 +978,8 @@ const BeneficiaryDetail = () => {
                       const displayNotes = item.notes ? item.notes.replace(/\[Receipt:\s*([^\]]+)\]\(([^)]+)\)/, '').trim() : '';
 
                       return (
-                        <div key={item.id} className="py-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between hover:bg-slate-50/20 transition-all px-2">
-                          <div className="space-y-1.5">
+                        <div key={item.id} className="py-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between hover:bg-slate-50/20 transition-all px-2 relative group">
+                          <div className="space-y-1.5 flex-1 pr-12">
                             <p className="text-sm font-semibold text-slate-800">{item.purpose}</p>
                             <span className="inline-block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                               Category: {item.category}
@@ -956,13 +1001,38 @@ const BeneficiaryDetail = () => {
                               </a>
                             )}
                           </div>
-                          <div className="text-right shrink-0">
+                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
                             <p className="text-sm font-extrabold text-primary-600">
                               {formatMoney(item.amount)}
                             </p>
                             <span className="text-[10px] text-slate-400 font-medium">
                               {new Date(item.dateGiven).toLocaleDateString()}
                             </span>
+                            <div className="flex items-center gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-all">
+                              <button
+                                onClick={() => {
+                                  setEditingAssistanceId(item.id);
+                                  setAmount(currency === 'USD' ? (item.amount / 1500).toString() : item.amount.toString());
+                                  setPurpose(item.purpose);
+                                  setAssistanceCategory(item.category);
+                                  const notesWithoutReceipt = item.notes ? item.notes.replace(/\[Receipt:\s*([^\]]+)\]\(([^)]+)\)/, '').trim() : '';
+                                  setAssistanceNotes(notesWithoutReceipt);
+                                  setAssistanceReceipt(null);
+                                  setShowAssistanceForm(true);
+                                }}
+                                className="text-slate-400 hover:text-primary-500 transition-all text-xs font-bold bg-transparent border-0 cursor-pointer p-1"
+                                title="Edit support log"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteAssistance(item.id)}
+                                className="text-slate-400 hover:text-red-500 transition-all text-xs font-bold bg-transparent border-0 cursor-pointer p-1"
+                                title="Delete support log"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
