@@ -251,8 +251,8 @@ const Beneficiaries = () => {
 
       {/* 4. Registration Modal Popup Form */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-150 my-8 max-h-[90vh] overflow-y-auto">
             {/* Modal Close Button */}
             <button
               onClick={() => {

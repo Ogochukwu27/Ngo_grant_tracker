@@ -49,6 +49,9 @@ const BeneficiaryDetail = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [showDocuments, setShowDocuments] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState('');
+  const [savingDescription, setSavingDescription] = useState(false);
 
   // Follow-Up states
   const [showFollowUpForm, setShowFollowUpForm] = useState(false);
@@ -122,6 +125,35 @@ const BeneficiaryDetail = () => {
     } catch (err) {
       console.error('Delete beneficiary error:', err.message);
       triggerToast('Server error while deleting beneficiary.', 'error');
+    }
+  };
+
+  // Update Dossier Statement of Need (beneficiary description)
+  const handleUpdateDescription = async (e) => {
+    e.preventDefault();
+    setSavingDescription(true);
+
+    try {
+      const res = await authFetch(`/beneficiaries/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: editedDescription }),
+      });
+
+      if (res.status === 200) {
+        const data = await res.json();
+        setBeneficiary((prev) => ({ ...prev, description: data.description }));
+        setIsEditingDescription(false);
+        triggerToast('Statement of Need updated successfully!', 'success');
+      } else {
+        const errData = await res.json();
+        triggerToast(errData.message || 'Failed to update Statement of Need', 'error');
+      }
+    } catch (err) {
+      console.error('Error updating description:', err.message);
+      triggerToast('Server error during update.', 'error');
+    } finally {
+      setSavingDescription(false);
     }
   };
 
@@ -500,13 +532,55 @@ const BeneficiaryDetail = () => {
             <hr className="border-slate-100" />
 
             {/* Needs Description */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Dossier Statement of Need
-              </label>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-3">
-                {beneficiary.description}
-              </p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Dossier Statement of Need
+                </label>
+                {!isEditingDescription && (
+                  <button
+                    onClick={() => {
+                      setEditedDescription(beneficiary.description);
+                      setIsEditingDescription(true);
+                    }}
+                    className="text-xs font-bold text-primary-600 hover:text-primary-500 cursor-pointer outline-none bg-transparent border-0"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+              
+              {isEditingDescription ? (
+                <form onSubmit={handleUpdateDescription} className="space-y-3">
+                  <textarea
+                    required
+                    rows="3"
+                    value={editedDescription}
+                    onChange={(e) => setEditedDescription(e.target.value)}
+                    className="w-full text-sm leading-relaxed text-slate-800 bg-white border border-slate-200 rounded-xl p-3 focus:border-primary-500 focus:outline-none resize-none"
+                  ></textarea>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingDescription(false)}
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 cursor-pointer bg-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingDescription}
+                      className="flex items-center gap-1 rounded-lg bg-primary-500 hover:bg-primary-400 px-3 py-1.5 text-xs font-semibold text-white shadow-sm disabled:opacity-50 cursor-pointer"
+                    >
+                      {savingDescription ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <p className="text-sm leading-relaxed text-slate-650 bg-slate-50 border border-slate-100 rounded-xl p-3 font-medium">
+                  {beneficiary.description}
+                </p>
+              )}
             </div>
 
             <hr className="border-slate-100" />
@@ -527,40 +601,7 @@ const BeneficiaryDetail = () => {
 
               {showDocuments && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                  {/* Single-Click Upload Button */}
-                  <div>
-                    <button
-                      type="button"
-                      disabled={uploading}
-                      onClick={() => document.getElementById('sidebar-file-input').click()}
-                      className="flex items-center justify-center gap-1.5 rounded-xl bg-primary-500 hover:bg-primary-400 px-3 py-2 text-xs font-semibold text-white shadow-sm disabled:opacity-50 w-full cursor-pointer btn-animate"
-                    >
-                      {uploading ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4" />
-                          <span>Upload Document</span>
-                        </>
-                      )}
-                    </button>
-                    <input
-                      id="sidebar-file-input"
-                      type="file"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          handleUploadFile(file);
-                        }
-                      }}
-                    />
-                    {uploadError && (
-                      <span className="text-[10px] font-semibold text-red-500 block mt-1">{uploadError}</span>
-                    )}
-                  </div>
-
-                  {/* Documents List */}
+                  {/* Documents List (Read-only) */}
                   {beneficiary.evidence.length === 0 ? (
                     <p className="text-xs text-slate-400 italic">No documents uploaded.</p>
                   ) : (
@@ -573,7 +614,7 @@ const BeneficiaryDetail = () => {
                           : `${BACKEND_URL}${file.fileUrl}`;
 
                         return (
-                          <div key={file.id} className="flex items-center gap-2 border border-slate-100 rounded-xl p-2 bg-white hover:bg-slate-50/50 transition-all relative group">
+                          <div key={file.id} className="flex items-center gap-2 border border-slate-100 rounded-xl p-2 bg-white hover:bg-slate-50/50 transition-all relative">
                             <FileIcon className={`h-4 w-4 shrink-0 ${isImage ? 'text-blue-500' : 'text-amber-500'}`} />
                             <div className="min-w-0 flex-1">
                               <a
@@ -586,13 +627,6 @@ const BeneficiaryDetail = () => {
                                 {file.fileName}
                               </a>
                             </div>
-                            <button
-                              onClick={() => handleDeleteEvidence(file.id)}
-                              className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1 rounded-lg hover:bg-red-50 cursor-pointer"
-                              title="Delete file"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
                           </div>
                         );
                       })}
