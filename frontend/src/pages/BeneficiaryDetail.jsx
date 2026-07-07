@@ -439,17 +439,22 @@ const BeneficiaryDetail = () => {
       });
     });
     
-    // Add evidence entries
+    // Add evidence entries (filtering out receipts that are linked inside assistance notes)
     beneficiary.evidence.forEach(item => {
-      events.push({
-        id: `evidence-${item.id}`,
-        type: 'evidence',
-        date: new Date(item.createdAt),
-        title: `Uploaded Supporting Document`,
-        subtitle: item.fileName,
-        description: `File Type: ${item.fileType}`,
-        raw: item
-      });
+      const isReceipt = beneficiary.assistance.some(
+        ass => ass.notes && ass.notes.includes(item.fileUrl)
+      );
+      if (!isReceipt) {
+        events.push({
+          id: `evidence-${item.id}`,
+          type: 'evidence',
+          date: new Date(item.createdAt),
+          title: `Uploaded Supporting Document`,
+          subtitle: item.fileName,
+          description: `File Type: ${item.fileType}`,
+          raw: item
+        });
+      }
     });
     
     // Add followups
@@ -467,6 +472,14 @@ const BeneficiaryDetail = () => {
     
     // Sort events newest first
     return events.sort((a, b) => b.date - a.date);
+  };
+
+  // Filter out receipts linked to support logs to keep case documents list clean
+  const getNonReceiptDocuments = () => {
+    if (!beneficiary) return [];
+    return beneficiary.evidence.filter(
+      file => !beneficiary.assistance.some(ass => ass.notes && ass.notes.includes(file.fileUrl))
+    );
   };
 
   if (loading) {
@@ -633,7 +646,7 @@ const BeneficiaryDetail = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Case Documents ({beneficiary.evidence.length})
+                  Case Documents ({getNonReceiptDocuments().length})
                 </label>
                 <button
                   onClick={() => setShowDocuments(!showDocuments)}
@@ -646,11 +659,11 @@ const BeneficiaryDetail = () => {
               {showDocuments && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
                   {/* Documents List (Read-only) */}
-                  {beneficiary.evidence.length === 0 ? (
+                  {getNonReceiptDocuments().length === 0 ? (
                     <p className="text-xs text-slate-400 italic">No documents uploaded.</p>
                   ) : (
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                      {beneficiary.evidence.map((file) => {
+                      {getNonReceiptDocuments().map((file) => {
                         const isImage = file.fileType.startsWith('image/');
                         const FileIcon = isImage ? ImageIcon : FileText;
                         const targetUrl = file.fileUrl.startsWith('http')
