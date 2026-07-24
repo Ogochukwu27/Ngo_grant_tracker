@@ -13,12 +13,16 @@ const {
   updateUserRole,
   updateUserStatus,
   deleteUser,
+  tempDbInit,
 } = require('../controllers/authController');
 
 // Import the authentication middleware (the bouncer)
 const { protect, requireRole } = require('../middleware/authMiddleware');
 
 // Define API paths and map them to their controllers
+
+// Route: GET /api/auth/temp-db-init (Temporary DB sync public endpoint)
+router.get('/temp-db-init', tempDbInit);
 
 // Route: POST /api/auth/register
 // Registers a new user. Access: Public

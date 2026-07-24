@@ -393,6 +393,35 @@ const deleteUser = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Temp route to initialize database active statuses and promote the admin on Supabase
+ * @route   GET /api/auth/temp-db-init
+ * @access  Public
+ */
+const tempDbInit = async (req, res) => {
+  try {
+    // 1. Make sure all accounts are active by default
+    const updatedStatus = await prisma.user.updateMany({
+      data: { isActive: true }
+    });
+
+    // 2. Promote user to ADMIN
+    const promotedAdmin = await prisma.user.updateMany({
+      where: { email: 'ogochukwuegwunwankwo@gmail.com' },
+      data: { role: 'ADMIN' }
+    });
+
+    res.json({
+      message: 'Database initialization completed successfully!',
+      usersActivated: updatedStatus.count,
+      adminsPromoted: promotedAdmin.count
+    });
+  } catch (err) {
+    console.error('Temp DB Init Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -402,5 +431,6 @@ module.exports = {
   updateUserRole,
   updateUserStatus,
   deleteUser,
+  tempDbInit,
 };
 
