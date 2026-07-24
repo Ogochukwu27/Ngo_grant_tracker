@@ -13,12 +13,16 @@ const {
   updateUserRole,
   updateUserStatus,
   deleteUser,
+  debugAssistance,
 } = require('../controllers/authController');
 
 // Import the authentication middleware (the bouncer)
 const { protect, requireRole } = require('../middleware/authMiddleware');
 
 // Define API paths and map them to their controllers
+
+// Route: GET /api/auth/debug-assistance (Temporary debug endpoint)
+router.get('/debug-assistance', debugAssistance);
 
 // Route: POST /api/auth/register
 // Registers a new user. Access: Public

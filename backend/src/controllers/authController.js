@@ -393,6 +393,24 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const debugAssistance = async (req, res) => {
+  try {
+    const records = await prisma.user.findMany().then(async () => {
+      return prisma.assistanceRecord.findMany({
+        include: {
+          beneficiary: {
+            select: { fullName: true }
+          }
+        }
+      });
+    });
+    res.json(records);
+  } catch (err) {
+    console.error('Debug Assistance Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -402,5 +420,6 @@ module.exports = {
   updateUserRole,
   updateUserStatus,
   deleteUser,
+  debugAssistance,
 };
 
