@@ -400,25 +400,44 @@ const deleteUser = async (req, res) => {
  */
 const tempDbInit = async (req, res) => {
   try {
-    // 1. Make sure all accounts are active by default
-    const updatedStatus = await prisma.user.updateMany({
+    const { execSync } = require('child_process');
+    console.log('Running runtime database sync and prisma generate...');
+
+    // Run db push and generate client in the live environment
+    const output1 = execSync('npx prisma db push --accept-data-loss', { encoding: 'utf-8' });
+    const output2 = execSync('npx prisma generate', { encoding: 'utf-8' });
+
+    // Clear require cache for Prisma so it loads the newly generated client files
+    Object.keys(require.cache).forEach((key) => {
+      if (key.includes('@prisma') || key.includes('.prisma')) {
+        delete require.cache[key];
+      }
+    });
+
+    // Re-require the newly generated Prisma client from our config file
+    const freshPrisma = require('../config/db');
+
+    // Make sure all accounts are active by default
+    const updatedStatus = await freshPrisma.user.updateMany({
       data: { isActive: true }
     });
 
-    // 2. Promote user to ADMIN
-    const promotedAdmin = await prisma.user.updateMany({
+    // Promote user to ADMIN
+    const promotedAdmin = await freshPrisma.user.updateMany({
       where: { email: 'ogochukwuegwunwankwo@gmail.com' },
       data: { role: 'ADMIN' }
     });
 
     res.json({
       message: 'Database initialization completed successfully!',
+      syncOutput: output1,
+      generateOutput: output2,
       usersActivated: updatedStatus.count,
       adminsPromoted: promotedAdmin.count
     });
   } catch (err) {
     console.error('Temp DB Init Error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message, stack: err.stack });
   }
 };
 
