@@ -416,8 +416,9 @@ const tempDbInit = async (req, res) => {
       }
     });
 
-    // Re-require the newly generated Prisma client from our config file
-    const freshPrisma = require('../config/db');
+    // Instantiate a brand-new PrismaClient directly to load the fresh client code from disk
+    const { PrismaClient } = require('@prisma/client');
+    const freshPrisma = new PrismaClient();
 
     // Make sure all accounts are active by default
     const updatedStatus = await freshPrisma.user.updateMany({
