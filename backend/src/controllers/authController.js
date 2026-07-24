@@ -399,13 +399,15 @@ const deleteUser = async (req, res) => {
  * @access  Public
  */
 const tempDbInit = async (req, res) => {
+  let output1 = 'Not run';
+  let output2 = 'Not run';
   try {
     const { execSync } = require('child_process');
     console.log('Running runtime database sync and prisma generate...');
 
     // Run db push and generate client in the live environment
-    const output1 = execSync('npx prisma db push --accept-data-loss', { encoding: 'utf-8' });
-    const output2 = execSync('npx prisma generate', { encoding: 'utf-8' });
+    output1 = execSync('npx prisma db push --accept-data-loss', { encoding: 'utf-8' });
+    output2 = execSync('npx prisma generate', { encoding: 'utf-8' });
 
     // Clear require cache for Prisma so it loads the newly generated client files
     Object.keys(require.cache).forEach((key) => {
@@ -437,7 +439,12 @@ const tempDbInit = async (req, res) => {
     });
   } catch (err) {
     console.error('Temp DB Init Error:', err);
-    res.status(500).json({ error: err.message, stack: err.stack });
+    res.status(500).json({ 
+      error: err.message, 
+      stack: err.stack,
+      syncOutput: output1,
+      generateOutput: output2
+    });
   }
 };
 
