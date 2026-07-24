@@ -23,7 +23,7 @@ import {
 
 const BeneficiaryDetail = () => {
   const { id } = useParams(); // Extract :id parameter from path URL
-  const { authFetch, formatMoney, currency, triggerToast } = useContext(AuthContext);
+  const { authFetch, formatMoney, currency, triggerToast, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   // Profile data states
@@ -520,7 +520,7 @@ const BeneficiaryDetail = () => {
               Case File Status:
             </span>
             <select
-              disabled={statusUpdating}
+              disabled={statusUpdating || user?.role === 'VIEWER'}
               value={beneficiary.status}
               onChange={(e) => handleStatusChange(e.target.value)}
               className={`rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all focus:outline-none ${
@@ -529,7 +529,7 @@ const BeneficiaryDetail = () => {
                   : beneficiary.status === 'RESOLVED'
                   ? 'bg-blue-100 text-blue-700'
                   : 'bg-slate-100 text-slate-700'
-              }`}
+              } ${user?.role === 'VIEWER' ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
             >
               <option value="ACTIVE">ACTIVE</option>
               <option value="RESOLVED">RESOLVED</option>
@@ -537,14 +537,16 @@ const BeneficiaryDetail = () => {
             </select>
           </div>
 
-          <button
-            onClick={handleDeleteProfile}
-            className="flex items-center gap-1.5 rounded-xl bg-red-50 hover:bg-red-100 px-3.5 py-1.5 text-xs font-bold text-red-600 transition-all border border-red-200/50 cursor-pointer btn-animate"
-            title="Delete beneficiary record permanently"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Delete Case</span>
-          </button>
+          {user?.role !== 'VIEWER' && (
+            <button
+              onClick={handleDeleteProfile}
+              className="flex items-center gap-1.5 rounded-xl bg-red-50 hover:bg-red-100 px-3.5 py-1.5 text-xs font-bold text-red-600 transition-all border border-red-200/50 cursor-pointer btn-animate"
+              title="Delete beneficiary record permanently"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Delete Case</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -594,7 +596,7 @@ const BeneficiaryDetail = () => {
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Dossier Statement of Need
                 </label>
-                {!isEditingDescription && (
+                {!isEditingDescription && user?.role !== 'VIEWER' && (
                   <button
                     onClick={() => {
                       setEditedDescription(beneficiary.description);
@@ -840,10 +842,10 @@ const BeneficiaryDetail = () => {
               <div className="p-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <h4 className="text-base font-bold text-slate-800">Support Logs</h4>
-                  {!showAssistanceForm && (
+                  {!showAssistanceForm && user?.role !== 'VIEWER' && (
                     <button
                       onClick={() => setShowAssistanceForm(true)}
-                      className="flex items-center gap-1.5 rounded-lg bg-primary-50 hover:bg-primary-100 px-3 py-1.5 text-xs font-bold text-primary-700 transition-all"
+                      className="flex items-center gap-1.5 rounded-lg bg-primary-50 hover:bg-primary-100 px-3 py-1.5 text-xs font-bold text-primary-700 transition-all cursor-pointer"
                     >
                       <Plus className="h-4 w-4" /> Log Support
                     </button>
@@ -1021,32 +1023,34 @@ const BeneficiaryDetail = () => {
                             <span className="text-[10px] text-slate-400 font-medium">
                               {new Date(item.dateGiven).toLocaleDateString()}
                             </span>
-                            <div className="flex items-center gap-2 mt-1">
-                              <button
-                                onClick={() => {
-                                  setEditingAssistanceId(item.id);
-                                  setAmount(currency === 'USD' ? (item.amount / 1500).toString() : item.amount.toString());
-                                  setPurpose(item.purpose);
-                                  setAssistanceCategory(item.category);
-                                  const notesWithoutReceipt = item.notes ? item.notes.replace(/\[Receipt:\s*([^\]]+)\]\(([^)]+)\)/, '').trim() : '';
-                                  setAssistanceNotes(notesWithoutReceipt);
-                                  setAssistanceReceipt(null);
-                                  setShowAssistanceForm(true);
-                                }}
-                                className="text-primary-600 hover:text-primary-500 transition-all text-xs font-bold bg-transparent border-0 cursor-pointer py-1 pr-1"
-                                title="Edit support log"
-                              >
-                                Edit
-                              </button>
-                              <span className="text-slate-300">|</span>
-                              <button
-                                onClick={() => handleDeleteAssistance(item.id)}
-                                className="text-red-600 hover:text-red-500 transition-all text-xs font-bold bg-transparent border-0 cursor-pointer py-1 pl-1"
-                                title="Delete support log"
-                              >
-                                Delete
-                              </button>
-                            </div>
+                            {user?.role !== 'VIEWER' && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingAssistanceId(item.id);
+                                    setAmount(currency === 'USD' ? (item.amount / 1500).toString() : item.amount.toString());
+                                    setPurpose(item.purpose);
+                                    setAssistanceCategory(item.category);
+                                    const notesWithoutReceipt = item.notes ? item.notes.replace(/\[Receipt:\s*([^\]]+)\]\(([^)]+)\)/, '').trim() : '';
+                                    setAssistanceNotes(notesWithoutReceipt);
+                                    setAssistanceReceipt(null);
+                                    setShowAssistanceForm(true);
+                                  }}
+                                  className="text-primary-600 hover:text-primary-500 transition-all text-xs font-bold bg-transparent border-0 cursor-pointer py-1 pr-1"
+                                  title="Edit support log"
+                                >
+                                  Edit
+                                </button>
+                                <span className="text-slate-300">|</span>
+                                <button
+                                  onClick={() => handleDeleteAssistance(item.id)}
+                                  className="text-red-600 hover:text-red-500 transition-all text-xs font-bold bg-transparent border-0 cursor-pointer py-1 pl-1"
+                                  title="Delete support log"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -1061,10 +1065,10 @@ const BeneficiaryDetail = () => {
               <div className="p-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <h4 className="text-base font-bold text-slate-800">Scheduled Follow-Ups</h4>
-                  {!showFollowUpForm && (
+                  {!showFollowUpForm && user?.role !== 'VIEWER' && (
                     <button
                       onClick={() => setShowFollowUpForm(true)}
-                      className="flex items-center gap-1.5 rounded-lg bg-primary-50 hover:bg-primary-100 px-3 py-1.5 text-xs font-bold text-primary-700 transition-all"
+                      className="flex items-center gap-1.5 rounded-lg bg-primary-50 hover:bg-primary-100 px-3 py-1.5 text-xs font-bold text-primary-700 transition-all cursor-pointer"
                     >
                       <Plus className="h-4 w-4" /> Schedule Check
                     </button>
@@ -1235,10 +1239,10 @@ const BeneficiaryDetail = () => {
                           </div>
 
                           {/* Complete check trigger action */}
-                          {(isPending || isOverdue) && (
+                          {(isPending || isOverdue) && user?.role !== 'VIEWER' && (
                             <button
                               onClick={() => openCompletionForm(item.id)}
-                              className="flex items-center gap-1 rounded-lg bg-primary-50 hover:bg-primary-100 px-3 py-1.5 text-xs font-bold text-primary-700 shrink-0 transition-all"
+                              className="flex items-center gap-1 rounded-lg bg-primary-50 hover:bg-primary-100 px-3 py-1.5 text-xs font-bold text-primary-700 shrink-0 transition-all cursor-pointer"
                             >
                               <CheckCircle className="h-4 w-4" />
                               <span>Complete Check</span>

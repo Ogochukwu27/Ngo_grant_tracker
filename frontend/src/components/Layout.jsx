@@ -18,6 +18,8 @@ import {
   Menu,
   Sun,
   Moon,
+  ShieldCheck,     // Used for User Management sidebar link
+  ClipboardList,   // Used for Audit Logs sidebar link
   Settings as SettingsIcon
 } from 'lucide-react';
 
@@ -160,12 +162,30 @@ const Layout = () => {
       icon: Bell,
       badge: unreadCount > 0 ? unreadCount : null,
     },
-    {
-      name: 'Settings',
-      path: '/settings',
-      icon: SettingsIcon,
-    },
   ];
+
+  // Restrict User Management and Audit Trail in sidebar to ADMIN role only
+  if (user?.role === 'ADMIN') {
+    navItems.push(
+      {
+        name: 'User Management',
+        path: '/users',
+        icon: ShieldCheck,
+      },
+      {
+        name: 'Audit Trail',
+        path: '/audit-logs',
+        icon: ClipboardList,
+      }
+    );
+  }
+
+  // Always append Settings at the end
+  navItems.push({
+    name: 'Settings',
+    path: '/settings',
+    icon: SettingsIcon,
+  });
 
   return (
     <div className="flex min-h-screen bg-[#fffdf0] dark:bg-[#040d04] text-slate-800 dark:text-slate-100 relative transition-colors duration-300">

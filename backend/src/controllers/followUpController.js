@@ -2,6 +2,7 @@
 
 const prisma = require('../config/db');
 const { sendEmail } = require('../config/mailer');
+const { logAudit } = require('../config/auditLogger');
 
 /**
  * @desc    Schedule a new follow-up for a beneficiary
@@ -43,6 +44,13 @@ const createFollowUp = async (req, res) => {
         title: 'Follow-Up Scheduled',
         message: `A follow-up assessment has been scheduled for "${beneficiary.fullName}" on ${formattedDate}.`,
       },
+    });
+
+    // Write action to Audit Log
+    await logAudit({
+      req,
+      action: 'CREATE_FOLLOW_UP',
+      details: `Scheduled a follow-up assessment for beneficiary: ${beneficiary.fullName} (ID: ${beneficiary.id}) on ${formattedDate}`,
     });
 
     res.status(201).json(followUp);
@@ -123,6 +131,18 @@ const updateFollowUp = async (req, res) => {
         },
       });
     }
+
+    // Write action to Audit Log
+    const auditAction = status === 'COMPLETED' ? 'COMPLETE_FOLLOW_UP' : 'UPDATE_FOLLOW_UP';
+    const auditDetails = status === 'COMPLETED'
+      ? `Completed follow-up assessment for beneficiary: ${existingFollowUp.beneficiary.fullName} (ID: ${existingFollowUp.beneficiary.id})`
+      : `Updated follow-up notes for beneficiary: ${existingFollowUp.beneficiary.fullName} (ID: ${existingFollowUp.beneficiary.id}) (Log ID: ${id})`;
+
+    await logAudit({
+      req,
+      action: auditAction,
+      details: auditDetails,
+    });
 
     res.json(updatedFollowUp);
   } catch (error) {

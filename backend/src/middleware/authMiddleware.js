@@ -34,6 +34,7 @@ const protect = async (req, res, next) => {
           email: true,
           name: true,
           role: true,
+          isActive: true, // Select active status to enforce deactivation checks
           createdAt: true,
         },
       });
@@ -41,6 +42,11 @@ const protect = async (req, res, next) => {
       // If the user no longer exists in the database
       if (!user) {
         return res.status(401).json({ message: 'Not authorized, user not found' });
+      }
+
+      // If the user is deactivated, block all request activity immediately
+      if (!user.isActive) {
+        return res.status(403).json({ message: 'Not authorized, account is deactivated' });
       }
 
       // 4. Attach the user object to the request (req.user)
@@ -61,4 +67,29 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+/**
+ * Role-Based Access Control Guard Middleware
+ * This checks if the user's role is one of the allowed roles for this endpoint.
+ * Always chain this AFTER the `protect` middleware!
+ * 
+ * @param {Array<String>} allowedRoles - List of authorized roles (e.g. ['ADMIN', 'STAFF'])
+ */
+const requireRole = (allowedRoles) => {
+  return (req, res, next) => {
+    // 1. Ensure the user object was attached by `protect`
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authorized, no user context' });
+    }
+
+    // 2. Validate active role exists in allowed list
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden: Insufficient privileges' });
+    }
+
+    // 3. Authorized! Move to the next middleware/controller
+    next();
+  };
+};
+
+module.exports = { protect, requireRole };
+

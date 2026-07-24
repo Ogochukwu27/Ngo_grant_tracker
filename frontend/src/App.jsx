@@ -13,6 +13,8 @@ import Beneficiaries from './pages/Beneficiaries';
 import BeneficiaryDetail from './pages/BeneficiaryDetail';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
+import UserManagement from './pages/UserManagement'; // New page component
+import AuditLogs from './pages/AuditLogs';           // New page component
 
 function App() {
   return (
@@ -41,6 +43,12 @@ function App() {
 
               {/* Settings page */}
               <Route path="/settings" element={<Settings />} />
+
+              {/* Admin-only Routes: Secured with requiredRole validation */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                <Route path="/users" element={<UserManagement />} />
+                <Route path="/audit-logs" element={<AuditLogs />} />
+              </Route>
             </Route>
 
             {/* Auto-redirect root path '/' to secure dashboard */}

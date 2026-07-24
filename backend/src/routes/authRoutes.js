@@ -9,10 +9,14 @@ const {
   loginUser,
   getUserProfile,
   changePassword,
+  getUsers,
+  updateUserRole,
+  updateUserStatus,
+  deleteUser,
 } = require('../controllers/authController');
 
 // Import the authentication middleware (the bouncer)
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireRole } = require('../middleware/authMiddleware');
 
 // Define API paths and map them to their controllers
 
@@ -34,4 +38,12 @@ router.get('/profile', protect, getUserProfile);
 // Access: Private (Requires JWT token)
 router.put('/change-password', protect, changePassword);
 
+// User Management Routes (Admin only)
+// All endpoints under here require both a valid token and the ADMIN role.
+router.get('/users', protect, requireRole(['ADMIN']), getUsers);
+router.put('/users/:id/role', protect, requireRole(['ADMIN']), updateUserRole);
+router.put('/users/:id/status', protect, requireRole(['ADMIN']), updateUserStatus);
+router.delete('/users/:id', protect, requireRole(['ADMIN']), deleteUser);
+
 module.exports = router;
+

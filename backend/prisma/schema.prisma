@@ -17,10 +17,26 @@ model User {
   email     String   @unique
   password  String
   name      String
-  role      String   @default("STAFF") // Roles can be "ADMIN" or "STAFF"
+  role      String   @default("STAFF") // Roles can be "ADMIN", "STAFF", or "VIEWER"
+  isActive  Boolean  @default(true)    // Allows admins to activate/deactivate accounts
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Model 7: AuditLog
+// Tracks administrative and state-changing events in the system for security auditing.
+model AuditLog {
+  id        String   @id @default(uuid()) // Unique identifier for each log entry
+  userId    String?                       // Reference to the user ID (nullable in case user is deleted)
+  userName  String                        // User's name captured at the moment of the action
+  userEmail String                        // User's email captured at the moment of the action
+  userRole  String                        // Active role of the user (e.g. ADMIN, STAFF, VIEWER) at log creation
+  action    String                        // Type of action performed (e.g., "USER_LOGIN", "CREATE_BENEFICIARY")
+  details   String                        // Human-readable description/details of the action
+  ipAddress String?                       // IP address of the client performing the action
+  createdAt DateTime @default(now())       // Timestamp of the action (Date and Time)
+}
+
 
 // Model 2: Beneficiary
 // Represents the people receiving assistance from the NGO.

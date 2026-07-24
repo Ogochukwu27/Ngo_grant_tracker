@@ -15,6 +15,7 @@ const assistanceRoutes = require('./routes/assistanceRoutes');
 const evidenceRoutes = require('./routes/evidenceRoutes');
 const followUpRoutes = require('./routes/followUpRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 
 // 2. Initialize the Express application
 const app = express();
@@ -47,6 +48,8 @@ app.use('/api/evidence', evidenceRoutes);
 app.use('/api/followups', followUpRoutes);
 // Mount analytics dashboard routes
 app.use('/api/analytics', analyticsRoutes);
+// Mount audit log history routes (Guarded: Admin only)
+app.use('/api/audit-logs', auditRoutes);
 
 // Basic Health Check Endpoint
 app.get('/', (req, res) => {

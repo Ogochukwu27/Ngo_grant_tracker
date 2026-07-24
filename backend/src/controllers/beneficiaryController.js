@@ -17,6 +17,7 @@ if (isCloudinaryConfigured) {
 }
 
 const prisma = require('../config/db');
+const { logAudit } = require('../config/auditLogger');
 
 /**
  * @desc    Create a new beneficiary record
@@ -80,6 +81,13 @@ const createBeneficiary = async (req, res) => {
         cloudinaryId: cloudinaryId,
         beneficiaryId: beneficiary.id,
       },
+    });
+
+    // Write action to Audit Log
+    await logAudit({
+      req,
+      action: 'CREATE_BENEFICIARY',
+      details: `Created beneficiary profile: ${beneficiary.fullName} (ID: ${beneficiary.id})`,
     });
 
     res.status(201).json(beneficiary);
@@ -222,6 +230,13 @@ const updateBeneficiary = async (req, res) => {
       },
     });
 
+    // Write action to Audit Log
+    await logAudit({
+      req,
+      action: 'UPDATE_BENEFICIARY',
+      details: `Updated beneficiary profile for: ${updatedBeneficiary.fullName} (ID: ${updatedBeneficiary.id})`,
+    });
+
     res.json(updatedBeneficiary);
   } catch (error) {
     console.error('Error updating beneficiary:', error);
@@ -252,6 +267,13 @@ const deleteBeneficiary = async (req, res) => {
     // will automatically wipe out all their linked assistance, evidence, and follow-ups.
     await prisma.beneficiary.delete({
       where: { id },
+    });
+
+    // Write action to Audit Log
+    await logAudit({
+      req,
+      action: 'DELETE_BENEFICIARY',
+      details: `Deleted beneficiary profile and all linked records for: ${existingBeneficiary.fullName} (ID: ${id})`,
     });
 
     res.json({ message: 'Beneficiary record and all associated records deleted successfully' });

@@ -6,7 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import { Plus, Search, SlidersHorizontal, MapPin, X, User } from 'lucide-react';
 
 const Beneficiaries = () => {
-  const { authFetch } = useContext(AuthContext);
+  const { authFetch, user } = useContext(AuthContext);
 
   // Lists state
   const [beneficiaries, setBeneficiaries] = useState([]);
@@ -116,13 +116,15 @@ const Beneficiaries = () => {
           <p className="text-sm text-slate-500">Record, filter, and view case profiles for the organization.</p>
         </div>
         
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center justify-center gap-2 rounded-xl bg-primary-500 hover:bg-primary-400 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary-500/10 transition-all shrink-0"
-        >
-          <Plus className="h-5 w-5" />
-          <span>Register Beneficiary</span>
-        </button>
+        {user?.role !== 'VIEWER' && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary-500 hover:bg-primary-400 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary-500/10 transition-all shrink-0 cursor-pointer"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Register Beneficiary</span>
+          </button>
+        )}
       </div>
 
       {/* 2. Filters & Searches Section */}

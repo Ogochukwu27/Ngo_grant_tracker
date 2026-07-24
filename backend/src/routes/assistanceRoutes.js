@@ -12,18 +12,18 @@ const {
 } = require('../controllers/assistanceController');
 
 // Import authentication middleware
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireRole } = require('../middleware/authMiddleware');
 
 // Route mapping for /api/assistance
 router
   .route('/')
-  .post(protect, createAssistance) // Log new support (needs token)
-  .get(protect, getAssistanceRecords); // Fetch all logs (needs token)
+  .post(protect, requireRole(['ADMIN', 'STAFF']), createAssistance) // Log new support (ADMIN/STAFF only)
+  .get(protect, getAssistanceRecords); // Fetch all logs (All roles)
 
 // Route mapping for /api/assistance/:id
 router
   .route('/:id')
-  .put(protect, updateAssistance) // Update specific entry (needs token)
-  .delete(protect, deleteAssistance); // Delete specific entry (needs token)
+  .put(protect, requireRole(['ADMIN', 'STAFF']), updateAssistance) // Update specific entry (ADMIN/STAFF only)
+  .delete(protect, requireRole(['ADMIN']), deleteAssistance); // Delete specific entry (ADMIN only)
 
 module.exports = router;

@@ -4,6 +4,7 @@ const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
 const prisma = require('../config/db');
+const { logAudit } = require('../config/auditLogger');
 
 // Check if Cloudinary environment variables are configured in the .env file
 const isCloudinaryConfigured =
@@ -90,6 +91,13 @@ const uploadEvidence = async (req, res) => {
       },
     });
 
+    // Write action to Audit Log
+    await logAudit({
+      req,
+      action: 'UPLOAD_EVIDENCE',
+      details: `Uploaded evidence file: ${evidence.fileName} (ID: ${evidence.id}) for beneficiary ID: ${evidence.beneficiaryId}`,
+    });
+
     res.status(201).json(evidence);
   } catch (error) {
     console.error('Error uploading evidence:', error);
@@ -168,6 +176,13 @@ const deleteEvidence = async (req, res) => {
     // 3. Delete the record from PostgreSQL
     await prisma.evidence.delete({
       where: { id },
+    });
+
+    // Write action to Audit Log
+    await logAudit({
+      req,
+      action: 'DELETE_EVIDENCE',
+      details: `Deleted evidence file: ${evidence.fileName} (ID: ${evidence.id}) from beneficiary ID: ${evidence.beneficiaryId}`,
     });
 
     res.json({ message: 'Evidence record and file successfully deleted' });

@@ -1,6 +1,7 @@
 // backend/src/controllers/assistanceController.js
 
 const prisma = require('../config/db');
+const { logAudit } = require('../config/auditLogger');
 
 /**
  * @desc    Log a new assistance record for a beneficiary
@@ -38,6 +39,13 @@ const createAssistance = async (req, res) => {
         beneficiaryId,
         dateGiven: dateGiven ? new Date(dateGiven) : new Date(), // Default to today
       },
+    });
+
+    // Write action to Audit Log
+    await logAudit({
+      req,
+      action: 'CREATE_SUPPORT_LOG',
+      details: `Created support log of amount ${record.amount} for beneficiary: ${beneficiary.fullName} (ID: ${record.beneficiaryId})`,
     });
 
     res.status(201).json(record);
@@ -116,6 +124,13 @@ const updateAssistance = async (req, res) => {
       },
     });
 
+    // Write action to Audit Log
+    await logAudit({
+      req,
+      action: 'EDIT_SUPPORT_LOG',
+      details: `Updated support log for beneficiary ID: ${updatedRecord.beneficiaryId}. New Amount: ${updatedRecord.amount}, Category: ${updatedRecord.category} (Log ID: ${id})`,
+    });
+
     res.json(updatedRecord);
   } catch (error) {
     console.error('Error updating assistance record:', error);
@@ -144,6 +159,13 @@ const deleteAssistance = async (req, res) => {
     // 2. Perform deletion
     await prisma.assistanceRecord.delete({
       where: { id },
+    });
+
+    // Write action to Audit Log
+    await logAudit({
+      req,
+      action: 'DELETE_SUPPORT_LOG',
+      details: `Deleted support log of amount ${existingRecord.amount} for beneficiary ID: ${existingRecord.beneficiaryId} (Log ID: ${id})`,
     });
 
     res.json({ message: 'Assistance record deleted successfully' });
