@@ -393,62 +393,6 @@ const deleteUser = async (req, res) => {
   }
 };
 
-/**
- * @desc    Temp route to initialize database active statuses and promote the admin on Supabase
- * @route   GET /api/auth/temp-db-init
- * @access  Public
- */
-const tempDbInit = async (req, res) => {
-  let output1 = 'Not run';
-  let output2 = 'Not run';
-  try {
-    const { execSync } = require('child_process');
-    console.log('Running runtime database sync and prisma generate...');
-
-    // Run db push and generate client in the live environment
-    output1 = execSync('npx prisma db push --accept-data-loss', { encoding: 'utf-8' });
-    output2 = execSync('npx prisma generate', { encoding: 'utf-8' });
-
-    // Clear require cache for Prisma so it loads the newly generated client files
-    Object.keys(require.cache).forEach((key) => {
-      if (key.includes('@prisma') || key.includes('.prisma')) {
-        delete require.cache[key];
-      }
-    });
-
-    // Instantiate a brand-new PrismaClient directly to load the fresh client code from disk
-    const { PrismaClient } = require('@prisma/client');
-    const freshPrisma = new PrismaClient();
-
-    // Make sure all accounts are active by default
-    const updatedStatus = await freshPrisma.user.updateMany({
-      data: { isActive: true }
-    });
-
-    // Promote user to ADMIN
-    const promotedAdmin = await freshPrisma.user.updateMany({
-      where: { email: 'ogochukwuegwunwankwo@gmail.com' },
-      data: { role: 'ADMIN' }
-    });
-
-    res.json({
-      message: 'Database initialization completed successfully!',
-      syncOutput: output1,
-      generateOutput: output2,
-      usersActivated: updatedStatus.count,
-      adminsPromoted: promotedAdmin.count
-    });
-  } catch (err) {
-    console.error('Temp DB Init Error:', err);
-    res.status(500).json({ 
-      error: err.message, 
-      stack: err.stack,
-      syncOutput: output1,
-      generateOutput: output2
-    });
-  }
-};
-
 module.exports = {
   registerUser,
   loginUser,
@@ -458,6 +402,5 @@ module.exports = {
   updateUserRole,
   updateUserStatus,
   deleteUser,
-  tempDbInit,
 };
 
